@@ -13,7 +13,7 @@ import (
 
 func main() {
 	http.HandleFunc("/", handleDraw)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":18080", nil))
 }
 
 func handleDraw(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +71,13 @@ func getColor(n byte) color.Color {
 	if c < 0 {
 		c = 0
 	}
-	return color.Gray{Y: c}
+
+	// Some artificial color transformation
+	red := c / 7
+	green := c / 3
+	blue := c / 2
+
+	return color.RGBA{R: red, G: green, B: blue, A: 220}
 }
 
 func mandelbrot(x, y float64) byte {
