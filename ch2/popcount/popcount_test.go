@@ -21,25 +21,50 @@ var tests = []struct {
 	{0xffffffffffffffff, 64},
 }
 
+func TestPopCountByteSlice(t *testing.T) {
+	for _, tt := range tests {
+		slice := make([]byte, 8)
+		slice[0] = byte(tt.in >> (0 * 8))
+		slice[1] = byte(tt.in >> (1 * 8))
+		slice[2] = byte(tt.in >> (2 * 8))
+		slice[3] = byte(tt.in >> (3 * 8))
+		slice[4] = byte(tt.in >> (4 * 8))
+		slice[5] = byte(tt.in >> (5 * 8))
+		slice[6] = byte(tt.in >> (6 * 8))
+		slice[7] = byte(tt.in >> (7 * 8))
+		if got := PopCountByteSlice(slice); got != uint64(tt.want) {
+			t.Errorf("testPopCountByteSlice() = %v, want %v", got, tt.want)
+		}
+	}
+}
+
+func TestPopCount(t *testing.T) {
+	for _, tt := range tests {
+		if got := PopCount(tt.in); got != tt.want {
+			t.Errorf("popCount() = %v, want %v", got, tt.want)
+		}
+	}
+}
+
 func TestPopCountLookupTable(t *testing.T) {
 	for _, tt := range tests {
-		if got := PopCountLookupTableExpr(tt.in); got != tt.want {
-			t.Errorf("PopCountLookupTableExpr() = %v, want %v", got, tt.want)
+		if got := popCountLookupTableExpr(tt.in); got != tt.want {
+			t.Errorf("popCountLookupTableExpr() = %v, want %v", got, tt.want)
 		}
 	}
 }
 
 func TestPopCountLookupTableLoop(t *testing.T) {
 	for _, tt := range tests {
-		if got := PopCountLookupTableLoop(tt.in); got != tt.want {
-			t.Errorf("PopCountLookupTableLoop() = %v, want %v", got, tt.want)
+		if got := popCountLookupTableLoop(tt.in); got != tt.want {
+			t.Errorf("popCountLookupTableLoop() = %v, want %v", got, tt.want)
 		}
 	}
 }
 
 func TestPopCountNaive(t *testing.T) {
 	for _, tt := range tests {
-		if got := PopCountNaive(tt.in); got != tt.want {
+		if got := popCountNaive(tt.in); got != tt.want {
 			t.Errorf("TestPopCountNaive() = %v, want %v", got, tt.want)
 		}
 	}
@@ -47,8 +72,8 @@ func TestPopCountNaive(t *testing.T) {
 
 func TestPopCountClever(t *testing.T) {
 	for _, tt := range tests {
-		if got := PopCountClever(tt.in); got != tt.want {
-			t.Errorf("PopCountClever() = %v, want %v", got, tt.want)
+		if got := popCountClever(tt.in); got != tt.want {
+			t.Errorf("popCountClever() = %v, want %v", got, tt.want)
 		}
 	}
 }
@@ -69,43 +94,43 @@ func benchmarkPopCount(b *testing.B, in uint64, popcount func(uint64) byte) {
 }
 
 func BenchmarkPopCountLookupTableMostlyZeros(b *testing.B) {
-	benchmarkPopCount(b, mostlyZeros, PopCountLookupTableExpr)
+	benchmarkPopCount(b, mostlyZeros, popCountLookupTableExpr)
 }
 func BenchmarkPopCountLookupTableMostlyOnes(b *testing.B) {
-	benchmarkPopCount(b, mostlyOnes, PopCountLookupTableExpr)
+	benchmarkPopCount(b, mostlyOnes, popCountLookupTableExpr)
 }
 func BenchmarkPopCountLookupTableZerosAndOnes(b *testing.B) {
-	benchmarkPopCount(b, zerosAndOnes, PopCountLookupTableExpr)
+	benchmarkPopCount(b, zerosAndOnes, popCountLookupTableExpr)
 }
 
 func BenchmarkPopCountLookupTableLoopMostlyZeros(b *testing.B) {
-	benchmarkPopCount(b, mostlyZeros, PopCountLookupTableLoop)
+	benchmarkPopCount(b, mostlyZeros, popCountLookupTableLoop)
 }
 func BenchmarkPopCountLookupTableLoopMostlyOnes(b *testing.B) {
-	benchmarkPopCount(b, mostlyOnes, PopCountLookupTableLoop)
+	benchmarkPopCount(b, mostlyOnes, popCountLookupTableLoop)
 }
 func BenchmarkPopCountLookupTableLoopZerosAndOnes(b *testing.B) {
-	benchmarkPopCount(b, zerosAndOnes, PopCountLookupTableLoop)
+	benchmarkPopCount(b, zerosAndOnes, popCountLookupTableLoop)
 }
 
 func BenchmarkPopCountNaiveMostlyZeros(b *testing.B) {
-	benchmarkPopCount(b, mostlyZeros, PopCountNaive)
+	benchmarkPopCount(b, mostlyZeros, popCountNaive)
 }
 func BenchmarkPopCountNaiveMostlyOnes(b *testing.B) {
-	benchmarkPopCount(b, mostlyOnes, PopCountNaive)
+	benchmarkPopCount(b, mostlyOnes, popCountNaive)
 }
 func BenchmarkPopCountNaiveZerosAndOnes(b *testing.B) {
-	benchmarkPopCount(b, zerosAndOnes, PopCountNaive)
+	benchmarkPopCount(b, zerosAndOnes, popCountNaive)
 }
 
 func BenchmarkPopCountCleverMostlyZeros(b *testing.B) {
-	benchmarkPopCount(b, mostlyZeros, PopCountClever)
+	benchmarkPopCount(b, mostlyZeros, popCountClever)
 }
 func BenchmarkPopCountCleverMostlyOnes(b *testing.B) {
-	benchmarkPopCount(b, mostlyOnes, PopCountClever)
+	benchmarkPopCount(b, mostlyOnes, popCountClever)
 }
 func BenchmarkPopCountCleverZerosAndOnes(b *testing.B) {
-	benchmarkPopCount(b, zerosAndOnes, PopCountClever)
+	benchmarkPopCount(b, zerosAndOnes, popCountClever)
 }
 
 // Benchmark results
