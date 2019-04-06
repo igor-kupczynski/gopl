@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"crypto/sha256"
 	"crypto/sha512"
 	"fmt"
@@ -26,45 +24,23 @@ func CountDifferentBits(a []byte, b []byte) uint64 {
 }
 
 func main() {
-	// hash is the hash function to use, sha256 by default
-	hash := func(data []byte) []byte {
-		x := sha256.Sum256(data)
-		return x[:]
-	}
+	// hasher is the hasher function to use, sha256 by default
+	hasher := sha256.New()
 
-	// Allow the user to request different hash function
+	// Allow the user to request different hasher function
 	for _, v := range os.Args[1:] {
 		if v == "--sha384" {
-			hash = func(data []byte) []byte {
-				x := sha512.Sum384(data)
-				return x[:]
-			}
-			break
+			hasher = sha512.New384()
 		}
 		if v == "--sha512" {
-			hash = func(data []byte) []byte {
-				x := sha512.Sum512(data)
-				return x[:]
-			}
-			break
+			hasher = sha512.New()
 		}
 	}
 
-	// TODO: Is there a streaming sha256? we load everything to memory now
-	var buf bytes.Buffer
-
-	// Read stdio to buf
-	w := bufio.NewWriter(&buf)
-	_, err := io.Copy(w, os.Stdin)
-	if err != nil {
-		log.Fatalf("sha: %v", err)
-	}
-	err = w.Flush()
-	if err != nil {
+	// Stream stdio to the hasher
+	if _, err := io.Copy(hasher, os.Stdin); err != nil {
 		log.Fatalf("sha: %v", err)
 	}
 
-	// Generate and print hash of buf
-	sha := hash(buf.Bytes())
-	fmt.Printf("%x\n", sha)
+	fmt.Printf("%x\n", hasher.Sum(nil))
 }
