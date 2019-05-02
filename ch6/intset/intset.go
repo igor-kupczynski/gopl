@@ -5,14 +5,17 @@ import (
 	"fmt"
 )
 
+// wsize represents the number of bits in uint
+const wsize = 32 << (^uint(0) >> 63)
+
 // IntSet is a set of small non-negative integers. Zero value is an empty set.
 type IntSet struct {
-	words []uint64
+	words []uint
 }
 
 // Add adds the non-negative value x to the set.
 func (s *IntSet) Add(x int) {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/wsize, uint(x%wsize)
 	for len(s.words) <= word {
 		s.words = append(s.words, 0)
 	}
@@ -35,7 +38,7 @@ func (s *IntSet) Clear() {
 func (s *IntSet) Copy() *IntSet {
 	t := &IntSet{}
 	if s.words != nil {
-		t.words = make([]uint64, len(s.words))
+		t.words = make([]uint, len(s.words))
 		copy(t.words, s.words)
 	}
 	return t
@@ -45,9 +48,9 @@ func (s *IntSet) Copy() *IntSet {
 func (s *IntSet) Elems() []int {
 	var elems []int
 	for n, word := range s.words {
-		for bit := uint(0); bit < 64; bit++ {
+		for bit := uint(0); bit < wsize; bit++ {
 			if word&(1<<bit) != 0 {
-				elems = append(elems, 64*n+int(bit))
+				elems = append(elems, wsize*n+int(bit))
 			}
 		}
 	}
@@ -56,7 +59,7 @@ func (s *IntSet) Elems() []int {
 
 // Has checks if the set contains non-negative value x
 func (s *IntSet) Has(x int) bool {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/wsize, uint(x%wsize)
 	return len(s.words) > word && s.words[word]&(1<<bit) != 0
 }
 
@@ -64,7 +67,7 @@ func (s *IntSet) Has(x int) bool {
 func (s *IntSet) Len() int {
 	sum := 0
 	for _, word := range s.words {
-		for bit := uint(0); bit < 64; bit++ {
+		for bit := uint(0); bit < wsize; bit++ {
 			if word&(1<<bit) != 0 {
 				sum++
 			}
@@ -75,7 +78,7 @@ func (s *IntSet) Len() int {
 
 // Remove removes x form the set
 func (s *IntSet) Remove(x int) {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/wsize, uint(x%wsize)
 	if len(s.words) > word {
 		s.words[word] &^= 1 << bit
 	}
@@ -89,12 +92,12 @@ func (s *IntSet) String() string {
 		if word == 0 {
 			continue
 		}
-		for j := 0; j < 64; j++ {
+		for j := 0; j < wsize; j++ {
 			if word&(1<<uint(j)) != 0 {
 				if buf.Len() > len("{") {
 					buf.WriteByte(' ')
 				}
-				fmt.Fprintf(&buf, "%d", 64*i+j)
+				fmt.Fprintf(&buf, "%d", wsize*i+j)
 			}
 		}
 	}
