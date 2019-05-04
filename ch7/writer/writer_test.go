@@ -1,4 +1,4 @@
-package bytecounter
+package writer
 
 import (
 	"bytes"
