@@ -32,6 +32,38 @@ func length(s string) time.Duration {
 	return d
 }
 
+func lessForColumn(name string) func(a, b *Track) bool {
+	switch name {
+	case "Title":
+		return func(a, b *Track) bool { return a.Title < b.Title }
+	case "Artist":
+		return func(a, b *Track) bool { return a.Artist < b.Artist }
+	case "Album":
+		return func(a, b *Track) bool { return a.Album < b.Album }
+	case "Year":
+		return func(a, b *Track) bool { return a.Year < b.Year }
+	case "Length":
+		return func(a, b *Track) bool { return a.Length < b.Length }
+	}
+	panic(fmt.Sprintf("Non existing column %s", name))
+}
+
+func eqForColumn(name string) func(a, b *Track) bool {
+	switch name {
+	case "Title":
+		return func(a, b *Track) bool { return a.Title == b.Title }
+	case "Artist":
+		return func(a, b *Track) bool { return a.Artist == b.Artist }
+	case "Album":
+		return func(a, b *Track) bool { return a.Album == b.Album }
+	case "Year":
+		return func(a, b *Track) bool { return a.Year == b.Year }
+	case "Length":
+		return func(a, b *Track) bool { return a.Length == b.Length }
+	}
+	panic(fmt.Sprintf("Non existing column %s", name))
+}
+
 func printTracks(tracks []*Track) {
 	const format = "%v\t%v\t%v\t%v\t%v\t\n"
 	tw := new(tabwriter.Writer).Init(os.Stdout, 0, 8, 2, ' ', 0)
@@ -42,6 +74,12 @@ func printTracks(tracks []*Track) {
 	}
 	_ = tw.Flush() // calculate column widths and print table
 }
+
+type byTitle []*Track
+
+func (x byTitle) Len() int           { return len(x) }
+func (x byTitle) Less(i, j int) bool { return x[i].Title < x[j].Title }
+func (x byTitle) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
 type byArtist []*Track
 
@@ -55,6 +93,12 @@ func (x byYear) Len() int           { return len(x) }
 func (x byYear) Less(i, j int) bool { return x[i].Year < x[j].Year }
 func (x byYear) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
+type byLength []*Track
+
+func (x byLength) Len() int           { return len(x) }
+func (x byLength) Less(i, j int) bool { return x[i].Length < x[j].Length }
+func (x byLength) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
+
 type customSort struct {
 	t    []*Track
 	less func(x, y *Track) bool
@@ -63,6 +107,55 @@ type customSort struct {
 func (x customSort) Len() int           { return len(x.t) }
 func (x customSort) Less(i, j int) bool { return x.less(x.t[i], x.t[j]) }
 func (x customSort) Swap(i, j int)      { x.t[i], x.t[j] = x.t[j], x.t[i] }
+
+// click represents a "click" on a column in table widget
+type click struct {
+	column string
+	odd    bool
+}
+
+// trackTableWidget is a table widget for list of Tracks. It allows its users
+// to click on the columns to define sorting
+type trackTableWidget struct {
+	// latest "click" is at the end
+	clicks []click
+	rows   []*Track
+}
+
+func (t trackTableWidget) Len() int {
+	return len(t.rows)
+}
+func (t trackTableWidget) Less(i, j int) bool {
+	a, b := t.rows[i], t.rows[j]
+	for i := len(t.clicks) - 1; i >= 0; i-- {
+		c := t.clicks[i]
+		if !eqForColumn(c.column)(a, b) {
+			less := lessForColumn(c.column)(a, b)
+			if c.odd {
+				return less
+			} else {
+				// reverse ordering in case of a second click
+				return !less
+			}
+		}
+	}
+	return false
+}
+func (t trackTableWidget) Swap(i, j int) {
+	t.rows[i], t.rows[j] = t.rows[j], t.rows[i]
+}
+
+// IsPalindrome returns true if the sequence is palindrome, i.e. don't change
+// when reverted.
+func IsPalindrome(data sort.Interface) bool {
+	n := data.Len()
+	for i, j := 0, n-1; i < n/2; i, j = i+1, j-1 {
+		if data.Less(i, j) || data.Less(j, i) {
+			return false
+		}
+	}
+	return true
+}
 
 func main() {
 	fmt.Println("byArtist:")
@@ -91,4 +184,23 @@ func main() {
 		return false
 	}})
 	printTracks(tracks)
+
+	fmt.Println("\nWidget:")
+	w := &trackTableWidget{
+		[]click{{"Length", true}, {"Year", true}, {"Title", true}},
+		tracks,
+	}
+	sort.Sort(w)
+	printTracks(tracks)
+
+	fmt.Println("\nMultistable:")
+	sort.Stable(byLength(tracks))
+	sort.Stable(byYear(tracks))
+	sort.Stable(byTitle(tracks))
+	printTracks(tracks)
+
+	fmt.Println()
+	fmt.Printf("IsPalindrome(%v) = %v\n", []int{1, 2, 2}, IsPalindrome(sort.IntSlice([]int{1, 2, 2})))
+	fmt.Printf("IsPalindrome(%v) = %v\n", []int{1, 2, 1}, IsPalindrome(sort.IntSlice([]int{1, 2, 1})))
+	fmt.Printf("IsPalindrome(%v) = %v\n", []int{1, 2, 2, 1}, IsPalindrome(sort.IntSlice([]int{1, 2, 2, 1})))
 }
